@@ -313,6 +313,8 @@ def color_percent(val):
 
 # ================= SCAN =================
 
+# ================= SCAN =================
+
 if st.button("🔮 Scan"):
 
     results = []
@@ -339,12 +341,10 @@ if st.button("🔮 Scan"):
             pair = f"{symbol}/USDT"
 
             try:
-
                 df_d = supertrend(fetch(pair, "1d"))
                 df_w = supertrend(fetch(pair, "1w"))
 
                 results.append({
-
                     "Logo": coin["image"],
                     "Coin": coin["name"],
                     "Symbol": pair,
@@ -356,13 +356,13 @@ if st.button("🔮 Scan"):
                     "% Since Flip D": percent_since_flip(df_d),
 
                     "Weekly": "🟢 ↑ Bullish" if df_w["trend"].iloc[-1] == 1 else "🔴 ↓ Bearish",
-                    "Days Since Fleep W": days_since_flip(df_w),
+                    "Days Since Flip W": days_since_flip(df_w),
                     "% Since Flip W": percent_since_flip(df_w),
+
                     "Market Cap Raw": coin["market_cap"],
                     "Market Cap": format_num(coin["market_cap"]),
                     "Volume Raw": coin["total_volume"],
                     "Volume 24h": format_num(coin["total_volume"])
-
                 })
 
                 progress = len(results) / target_count
@@ -378,44 +378,42 @@ if st.button("🔮 Scan"):
         page += 1
         time.sleep(0.3)
 
+    # ===== AFTER SCAN FINISHES =====
+
     if len(results) == 0:
-    st.error("No coins scanned. CoinGecko rate limit may still be active.")
+        st.error("No coins scanned. CoinGecko rate limit may still be active.")
 
-else:
-    df = pd.DataFrame(results)
+    else:
+        df = pd.DataFrame(results)
+        display_df = df.copy()
 
-    # your existing processing logic here
-    display_df = df.copy()
+        display_df["% Since Flip D"] = display_df["% Since Flip D"].apply(lambda x: f"{x:.2f}%")
+        display_df["% Since Flip W"] = display_df["% Since Flip W"].apply(lambda x: f"{x:.2f}%")
 
-    # format percentages
-    display_df["% Since Flip D"] = display_df["% Since Flip D"].apply(lambda x: f"{x:.2f}%")
-    display_df["% Since Flip W"] = display_df["% Since Flip W"].apply(lambda x: f"{x:.2f}%")
+        styled_df = display_df.style.applymap(
+            color_trend, subset=["Daily", "Weekly"]
+        ).applymap(
+            color_percent, subset=["% Since Flip D", "% Since Flip W"]
+        )
 
-    # styling
-    styled_df = display_df.style.applymap(
-        color_trend, subset=["Daily", "Weekly"]
-    ).applymap(
-        color_percent, subset=["% Since Flip D", "% Since Flip W"]
-    )
-
-    st.dataframe(
-        styled_df,
-        column_config={
-            "Logo": st.column_config.ImageColumn("Coin"),
-            "Open Chart": st.column_config.LinkColumn(
-                "TradingView",
-                display_text="Open"
-            ),
-            "Market Cap": st.column_config.NumberColumn(
-                "Market Cap",
-                format="compact"
-            ),
-            "Volume 24h": st.column_config.NumberColumn(
-                "Volume 24h",
-                format="compact"
-            ),
-        },
-        use_container_width=True,
-        hide_index=True,
-        height=600
-    )
+        st.dataframe(
+            styled_df,
+            column_config={
+                "Logo": st.column_config.ImageColumn("Coin"),
+                "Open Chart": st.column_config.LinkColumn(
+                    "TradingView",
+                    display_text="Open"
+                ),
+                "Market Cap": st.column_config.NumberColumn(
+                    "Market Cap",
+                    format="compact"
+                ),
+                "Volume 24h": st.column_config.NumberColumn(
+                    "Volume 24h",
+                    format="compact"
+                ),
+            },
+            use_container_width=True,
+            hide_index=True,
+            height=600
+        )
