@@ -379,99 +379,43 @@ if st.button("🔮 Scan"):
         time.sleep(0.3)
 
     if len(results) == 0:
+    st.error("No coins scanned. CoinGecko rate limit may still be active.")
 
-        st.error("No coins scanned. CoinGecko rate limit may still be active.")
+else:
+    df = pd.DataFrame(results)
 
-    else:
+    # your existing processing logic here
+    display_df = df.copy()
 
-        df = pd.DataFrame(results)
+    # format percentages
+    display_df["% Since Flip D"] = display_df["% Since Flip D"].apply(lambda x: f"{x:.2f}%")
+    display_df["% Since Flip W"] = display_df["% Since Flip W"].apply(lambda x: f"{x:.2f}%")
 
-        # ensure RAW columns exist and are numeric
-        df["Market Cap Raw"] = pd.to_numeric(df["Market Cap Raw"], errors="coerce")
-        df["Volume Raw"] = pd.to_numeric(df["Volume Raw"], errors="coerce")
-        df["Price Raw"] = pd.to_numeric(df["Price Raw"], errors="coerce")
-
-        # SORT ONLY USING RAW
-        df = df.sort_values("Market Cap Raw", ascending=False)
-
-        # reset index AFTER sorting
-        df = df.reset_index(drop=True)
-
-        # ranking column
-        df.insert(0, "#", df.index + 1)
-
-        # CREATE DISPLAY VERSION
-        display_df = df.copy()
-
-        # Keep values numeric for proper sorting and Streamlit formatting
-        display_df["Market Cap"] = display_df["Market Cap Raw"]
-        display_df["Volume 24h"] = display_df["Volume Raw"]
-        display_df["Price"] = display_df["Price Raw"]
-
-        # Remove raw columns from visible display
-        # Keep numeric backbone
-        display_df = display_df.drop(columns=[
-            "Market Cap Raw",
-            "Volume Raw",
-            "Price Raw"
-        ])
-
-        # Create unified Coin display column
-        display_df["Coin Display"] = display_df["Coin"]
-
-        # Reorder columns (Coin Display replaces Logo and Coin)
-        display_df = display_df[[
-            "#",
-            "Logo",
-            "Coin Display",
-            "Price",
-            "Open Chart",
-
-            "Daily",
-            "% Since Flip D",
-            "Days Since Flip D",
-
-            "Weekly",
-            "% Since Flip W",
-            "Days Since Fleep W",
-
-            "Market Cap",
-            "Volume 24h"
-        ]]
-        # Format Price with $
-        display_df["Price"] = display_df["Price"].apply(lambda x: f"${x:,.2f}")
-
-        # Format percentages with % symbol
-        display_df["% Since Flip D"] = display_df["% Since Flip D"].apply(lambda x: f"{x:.2f}%")
-        display_df["% Since Flip W"] = display_df["% Since Flip W"].apply(lambda x: f"{x:.2f}%")
-        # SHOW
-    
-    styled_df = display_df.style.applymap(color_trend, subset=["Daily", "Weekly"]) \
-                             .applymap(color_percent, subset=["% Since Flip D", "% Since Flip W"])
+    # styling
+    styled_df = display_df.style.applymap(
+        color_trend, subset=["Daily", "Weekly"]
+    ).applymap(
+        color_percent, subset=["% Since Flip D", "% Since Flip W"]
+    )
 
     st.dataframe(
         styled_df,
         column_config={
-
             "Logo": st.column_config.ImageColumn("Coin"),
-
             "Open Chart": st.column_config.LinkColumn(
                 "TradingView",
                 display_text="Open"
             ),
-
             "Market Cap": st.column_config.NumberColumn(
                 "Market Cap",
                 format="compact"
             ),
-
             "Volume 24h": st.column_config.NumberColumn(
                 "Volume 24h",
                 format="compact"
             ),
-
         },
         use_container_width=True,
         hide_index=True,
         height=600
-)
+    )
